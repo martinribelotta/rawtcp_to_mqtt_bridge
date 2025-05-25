@@ -46,6 +46,8 @@ CPMAddPackage("gh:redboltz/async_mqtt#10.1.0")
 add_executable(tcp_mqtt_bridge
     src/main.cpp
     src/slip.cpp
+    src/config.cpp
+    src/server_manager.cpp
 )
 
 target_link_libraries(tcp_mqtt_bridge
