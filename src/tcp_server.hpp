@@ -33,7 +33,7 @@ private:
             [this](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
                 if (!ec) {
                     auto session = std::make_shared<TcpSession>(std::move(socket), events_);
-                    auto weak_session = std::weak_ptr(session);
+                    auto weak_session = std::weak_ptr<TcpSession>(session);
                     
                     session->setCloseHandler([this, weak_session] {
                         if (auto s = weak_session.lock()) {
