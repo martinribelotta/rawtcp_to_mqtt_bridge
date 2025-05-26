@@ -1,4 +1,6 @@
-#pragma once
+#ifndef TCP_MQTT_BRIDGE_CONNECTION_MANAGER_HPP
+#define TCP_MQTT_BRIDGE_CONNECTION_MANAGER_HPP
+
 #include "tcp_context.hpp"
 #include "slip.hpp"
 #include <boost/asio.hpp>
@@ -31,3 +33,5 @@ private:
     std::string address_;
     slip::Decoder decoder_;
 };
+
+#endif // TCP_MQTT_BRIDGE_CONNECTION_MANAGER_HPP

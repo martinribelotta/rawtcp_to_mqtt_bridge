@@ -1,4 +1,6 @@
-#pragma once
+#ifndef TCP_MQTT_BRIDGE_CONFIG_HPP
+#define TCP_MQTT_BRIDGE_CONFIG_HPP
+
 #include <yaml-cpp/yaml.h>
 #include <spdlog/spdlog.h>
 #include <string>
@@ -25,3 +27,5 @@ public:
     static Configuration fromYaml(const std::string& path);
     static spdlog::level::level_enum parseLogLevel(const std::string& level);
 };
+
+#endif // TCP_MQTT_BRIDGE_CONFIG_HPP
