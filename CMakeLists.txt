@@ -48,6 +48,7 @@ add_executable(tcp_mqtt_bridge
     src/slip.cpp
     src/config.cpp
     src/server_manager.cpp
+    src/connection_manager.cpp
 )
 
 target_link_libraries(tcp_mqtt_bridge

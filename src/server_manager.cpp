@@ -1,5 +1,6 @@
 #include "server_manager.hpp"
 #include <spdlog/spdlog.h>
+#include "connection_manager.hpp" // Add this include if ConnectionManager is correct
 
 ServerManager::ServerManager(const Configuration& config)
     : config_(config)
@@ -13,45 +14,20 @@ ServerManager::ServerManager(const Configuration& config)
 void ServerManager::setupEventHandlers() {
     TcpEvents events;
     events.onConnect = [](auto& socket, auto context) {
-        auto addr = socket.remote_endpoint().address().to_string();
-        context->set("remote_address", addr);
-        context->set("decoder", slip::Decoder{});
-        
-        if (auto* decoder = context->template get_if<slip::Decoder>("decoder")) {
-            decoder->setPacketHandler([&socket, addr](std::span<const uint8_t> packet) {
-                spdlog::debug("Decoded packet of {} bytes from {}", packet.size(), addr);
-                auto response = slip::Decoder::makeResponse(slip::ACK);
-                boost::asio::async_write(socket, boost::asio::buffer(response),
-                    [addr](const boost::system::error_code& ec, std::size_t bytes_transferred) {
-                        if (ec) {
-                            spdlog::error("Error sending packet to {}: {}", addr, ec.message());
-                        } else {
-                            spdlog::debug("Sent SLIP packet {} bytes to {}", bytes_transferred, addr);
-                        }
-                    });
-            });
-        }
-        spdlog::info("New client connected from {}", addr);
+        auto manager = std::make_shared<ConnectionManager>(socket);
+        context->set("connection_manager", manager);
+        spdlog::info("New client connected from {}", manager->address());
     };
 
     events.onDisconnect = [](auto& socket, auto context) {
-        spdlog::info("Client disconnected from {}", 
-            context->template get<std::string>("remote_address"));
+        if (auto* manager = context->template get_if<std::shared_ptr<ConnectionManager>>("connection_manager")) {
+            spdlog::info("Client disconnected from {}", (*manager)->address());
+        }
     };
 
     events.onDataReceived = [](auto& socket, auto context, std::span<const uint8_t> data) {
-        auto addr = context->template get<std::string>("remote_address");
-        spdlog::debug("Raw data {} bytes from {}", data.size(), addr);
-        
-        try {
-            if (auto* decoder = context->template get_if<slip::Decoder>("decoder")) {
-                decoder->decode(data);
-            }
-        } catch (const slip::SlipError& e) {
-            spdlog::error("SLIP decode error from {}: {}", addr, e.what());
-            if (auto* decoder = context->template get_if<slip::Decoder>("decoder")) {
-                decoder->reset();
-            }
+        if (auto* manager = context->template get_if<std::shared_ptr<ConnectionManager>>("connection_manager")) {
+            (*manager)->handleData(data);
         }
     };
     
