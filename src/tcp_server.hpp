@@ -33,16 +33,16 @@ private:
             [this](boost::system::error_code ec, boost::asio::ip::tcp::socket socket) {
                 if (!ec) {
                     auto session = std::make_shared<TcpSession>(std::move(socket), events_);
-                    sessions_.insert(session);
-                    session->start();
-                    
-                    // Setup completion handler to remove session
                     auto weak_session = std::weak_ptr(session);
-                    boost::asio::post(socket.get_executor(), [this, weak_session]() {
-                        if (auto session = weak_session.lock()) {
-                            sessions_.erase(session);
+                    
+                    session->setCloseHandler([this, weak_session] {
+                        if (auto s = weak_session.lock()) {
+                            sessions_.erase(s);
                         }
                     });
+                    
+                    sessions_.insert(session);
+                    session->start();
                 }
                 do_accept();
             });

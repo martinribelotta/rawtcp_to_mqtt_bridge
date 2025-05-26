@@ -39,3 +39,15 @@ void ServerManager::run() {
                  config_.tcp.bind_address, config_.tcp.port);
     io_ctx_.run();
 }
+
+ServerManager::~ServerManager() {
+    stop();
+}
+
+void ServerManager::stop() {
+    if (!stopped_) {
+        stopped_ = true;
+        boost::system::error_code ec;
+        io_ctx_.stop();
+    }
+}
