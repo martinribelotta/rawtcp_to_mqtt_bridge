@@ -20,8 +20,8 @@ void ConnectionManager::handlePacket(std::span<const uint8_t> packet) {
 }
 
 void ConnectionManager::onPacketField(const FieldView& field) {
-    // TODO render packet on template, publish it on MQTT
-    spdlog::debug("Field {} received in packet", field.desc.name);
+    // Log detailed information about the field
+    spdlog::debug("Field received in packet: {} = {}", field.desc.to_string(), field.value.to_string());
 }
 
 void ConnectionManager::onPacketComplete(std::span<const uint8_t> rawPacket) {

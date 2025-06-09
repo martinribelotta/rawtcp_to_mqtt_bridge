@@ -26,7 +26,7 @@ public:
         std::vector<uint8_t>
     >;
     FieldValue() = default;
-    template <typename T>
+    template <typename T, typename = std::enable_if_t<!std::is_same_v<std::decay_t<T>, FieldValue>>>
     FieldValue(T&& v) : value_(std::forward<T>(v)) {}
 
     const ValueVariant& value() const { return value_; }
@@ -36,6 +36,7 @@ public:
 
     bool operator==(const FieldValue& other) const { return value_ == other.value_; }
     bool operator!=(const FieldValue& other) const { return value_ != other.value_; }
+    std::string to_string() const;
 private:
     ValueVariant value_;
 };
@@ -50,15 +51,17 @@ struct FieldDesc {
     FieldType type;
     size_t offset;
     std::optional<BitfieldInfo> bitfield;
-    std::optional<size_t> length; // Para bytearray
-    std::optional<FieldValue> value; // Para valores esperados (como el identificador)
+    std::optional<size_t> length;
+    std::optional<FieldValue> value;
+
+    std::string to_string() const;
 };
 
 struct PacketDesc {
     std::string name;
     std::vector<FieldDesc> fields;
-    size_t id_field_index;    // Index en fields
-    FieldValue id_value;      // Identification value
+    size_t id_field_index;
+    FieldValue id_value;
 };
 
 using PacketDb = std::vector<PacketDesc>;
@@ -66,12 +69,11 @@ using PacketDb = std::vector<PacketDesc>;
 struct FieldView {
     std::span<const uint8_t> raw;
     const FieldDesc& desc;
+    FieldValue value;  // The extracted value of the field
 };
 
-// Signature fija: void(const FieldView&)
 using FieldVisitor = std::function<void(const FieldView&)>;
 
-// Devuelve un par (cantidad de paquetes parseados exitosamente, offset final alcanzado)
 std::pair<size_t, size_t> scan_packets(const PacketDb& db, std::span<const uint8_t> data, const FieldVisitor& visitor);
 
 #endif // PACKET_PARSER_HPP
