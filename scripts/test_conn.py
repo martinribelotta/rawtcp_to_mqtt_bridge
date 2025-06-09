@@ -5,6 +5,7 @@ import argparse
 import sys
 import time
 import random
+import struct
 
 # SLIP special characters
 SLIP_END = 0xC0
@@ -59,9 +60,26 @@ async def client_connection(host: str, port: int, client_id: int):
         print(f"Client {client_id}: Connected")
         
         while True:
-            # Create and encode message
-            message = f"Hello from client {client_id}: {time.time()}".encode()
-            slip_packet = slip_encode(message)
+            # Create sensor data packet
+            # Format:
+            # - packet_type: uint8 = 0x10
+            # - sensor_id: uint16
+            # - temperature: float32
+            # - humidity: float32
+            # - pressure: float32
+            packet = bytearray()
+            packet.append(0x10)  # packet_type for sensor_data
+            packet.extend(client_id.to_bytes(2, 'little'))  # sensor_id as uint16
+            # Generate some simulated sensor data
+            temperature = 20.0 + random.uniform(-5, 5)  # temperature around 20°C
+            humidity = 50.0 + random.uniform(-10, 10)  # humidity around 50%
+            pressure = 1013.25 + random.uniform(-10, 10)  # pressure around 1 atm
+            # Pack floats in little-endian
+            packet.extend(struct.pack('<f', temperature))
+            packet.extend(struct.pack('<f', humidity))
+            packet.extend(struct.pack('<f', pressure))
+            
+            slip_packet = slip_encode(packet)
             writer.write(slip_packet)
             await writer.drain()
             
@@ -71,7 +89,10 @@ async def client_connection(host: str, port: int, client_id: int):
                 if response:
                     packets = decoder.decode(response)
                     for packet in packets:
-                        print(f"Client {client_id}: Decoded response: {packet.hex()} ({packet[0]:02x})")
+                        if len(packet) == 1 and packet[0] == 0x06:  # ACK
+                            print(f"Client {client_id}: Received ACK")
+                        else:
+                            print(f"Client {client_id}: Decoded response: {packet.hex()} ({packet[0]:02x})")
             except Exception as e:
                 print(f"Client {client_id}: Error reading response: {e}")
             

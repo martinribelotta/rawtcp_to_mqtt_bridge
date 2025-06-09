@@ -1,10 +1,13 @@
 #include "config.hpp"
 #include "server_manager.hpp"
+#include "packet_parser_yaml.hpp"
 #include <boost/program_options.hpp>
 #include <cpptrace/cpptrace.hpp>
 #include <spdlog/spdlog.h>
 
+#include <fstream>
 #include <iostream>
+#include <filesystem>
 
 int main(int argc, char* argv[]) {
     spdlog::set_level(spdlog::level::debug);
@@ -40,7 +43,14 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    auto config = Configuration::fromYaml(vm["config"].as<std::string>());
+    std::string config_path = vm["config"].as<std::string>();
+    // If path is relative, make it relative to current directory
+    if (!config_path.empty() && config_path[0] != '/') {
+        std::filesystem::path current = std::filesystem::current_path();
+        std::filesystem::path config_file(config_path);
+        config_path = (current / config_file).string();
+    }
+    auto config = Configuration::fromYaml(config_path);
 
     // Set log level from config, can be overridden by command line
     spdlog::set_level(Configuration::parseLogLevel(config.log_level));
@@ -56,9 +66,34 @@ int main(int argc, char* argv[]) {
     if (vm.count("port")) config.tcp.port = vm["port"].as<unsigned short>();
     if (vm.count("bind")) config.tcp.bind_address = vm["bind"].as<std::string>();
 
+    // Resolver packet_def_path relativo al archivo de configuración si no es absoluto
+    std::filesystem::path packet_def_path(config.packet_def_path);
+    if (!config.packet_def_path.empty() && config.packet_def_path[0] != '/') {
+        std::filesystem::path config_dir = std::filesystem::path(config_path).parent_path();
+        packet_def_path = config_dir / packet_def_path;
+    }
+
+    // Load packet definitions
+    std::ifstream packet_file(packet_def_path.string());
+    if (!packet_file) {
+        spdlog::error("Could not open packet definitions file: {}", packet_def_path.string());
+        return 1;
+    }
+    
+    PacketDb packet_db;
+    try {
+        std::string yaml_content((std::istreambuf_iterator<char>(packet_file)),
+                               std::istreambuf_iterator<char>());
+        packet_db = packetdb_from_yaml(yaml_content);
+        spdlog::info("Loaded {} packet definitions", packet_db.size());
+    } catch (const std::exception& e) {
+        spdlog::error("Failed to parse packet definitions: {}", e.what());
+        return 1;
+    }
+
     spdlog::info("Starting TCP <-> MQTT Bridge");
 
-    ServerManager server(config);
+    ServerManager server(config, packet_db);
     server.run();
 
     return 0;

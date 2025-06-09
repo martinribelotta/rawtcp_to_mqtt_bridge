@@ -49,6 +49,9 @@ add_executable(tcp_mqtt_bridge
     src/config.cpp
     src/server_manager.cpp
     src/connection_manager.cpp
+    src/packet_parser.cpp
+    src/packet_parser_yaml.cpp
+    src/packet_processor.cpp
 )
 
 target_link_libraries(tcp_mqtt_bridge

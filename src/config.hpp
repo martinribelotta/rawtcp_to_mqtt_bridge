@@ -23,6 +23,7 @@ public:
     TcpConfig tcp;
     MqttConfig mqtt;
     std::string log_level = "debug";
+    std::string packet_def_path = "packets.yaml"; // Add this line
 
     static Configuration fromYaml(const std::string& path);
     static spdlog::level::level_enum parseLogLevel(const std::string& level);

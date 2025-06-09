@@ -1,20 +1,21 @@
 #include "server_manager.hpp"
+#include "connection_manager.hpp"
 #include <spdlog/spdlog.h>
-#include "connection_manager.hpp" // Add this include if ConnectionManager is correct
 
-ServerManager::ServerManager(const Configuration& config)
+ServerManager::ServerManager(const Configuration& config, const PacketDb& packet_db)
     : config_(config)
     , server_(io_ctx_, 
              boost::asio::ip::make_address(config.tcp.bind_address), 
              config.tcp.port)
+    , packet_db_(packet_db)
 {
     setupEventHandlers();
 }
 
 void ServerManager::setupEventHandlers() {
     TcpEvents events;
-    events.onConnect = [](auto& socket, auto context) {
-        auto manager = std::make_shared<ConnectionManager>(socket);
+    events.onConnect = [this](auto& socket, auto context) {
+        auto manager = std::make_shared<ConnectionManager>(socket, packet_db_);
         context->set("connection_manager", manager);
         spdlog::info("New client connected from {}", manager->address());
     };

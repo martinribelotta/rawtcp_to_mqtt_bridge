@@ -1,0 +1,91 @@
+# Packet definitions for TCP<->MQTT bridge
+# Each packet has a unique identifier and a list of fields
+
+sensor_data:
+  - name: packet_type
+    type: uint8
+    offset: 0
+    value: 0x10  # Unique packet identifier
+
+  - name: sensor_id
+    type: uint16
+    offset: 1
+
+  - name: temperature
+    type: float32
+    offset: 3
+
+  - name: humidity
+    type: float32
+    offset: 7
+
+  - name: pressure
+    type: float32
+    offset: 11
+
+command_packet:
+  - name: packet_type
+    type: uint8
+    offset: 0
+    value: 0x20  # Unique packet identifier
+
+  - name: command_id
+    type: uint8
+    offset: 1
+
+  - name: param1
+    type: uint32
+    offset: 2
+
+  - name: param2
+    type: uint32
+    offset: 6
+
+status_report:
+  - name: packet_type
+    type: uint8
+    offset: 0
+    value: 0x30  # Unique packet identifier
+
+  - name: device_id
+    type: uint16
+    offset: 1
+
+  - name: status_flags
+    type: uint8
+    offset: 3
+    bitfield:
+      bit_offset: 0
+      bit_count: 8  # Status flags
+
+  - name: error_code
+    type: uint16
+    offset: 4
+
+  - name: uptime
+    type: uint32
+    offset: 6
+
+  - name: message
+    type: bytearray
+    offset: 10
+    length: 32  # Fixed length message field
+
+debug_packet:
+  - name: packet_type
+    type: uint8
+    offset: 0
+    value: 0xF0  # Unique packet identifier
+
+  - name: debug_level
+    type: uint8
+    offset: 1
+
+  - name: timestamp
+    type: uint64
+    offset: 2
+
+  - name: debug_data
+    type: bytearray
+    offset: 10
+    length: 64  # Fixed length debug data

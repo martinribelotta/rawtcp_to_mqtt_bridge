@@ -3,12 +3,14 @@
 
 #include "config.hpp"
 #include "tcp_server.hpp"
+#include "packet_parser.hpp"
+#include "packet_parser_yaml.hpp"
 #include "slip.hpp"
 #include <boost/asio.hpp>
 
 class ServerManager {
 public:
-    explicit ServerManager(const Configuration& config);
+    explicit ServerManager(const Configuration& config, const PacketDb& packet_db);
     ~ServerManager();
 
     // Prevent copying
@@ -24,6 +26,7 @@ private:
     boost::asio::io_context io_ctx_;
     TcpServer server_;
     const Configuration& config_;
+    const PacketDb& packet_db_;
     bool stopped_{false};
 };
 

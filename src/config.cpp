@@ -18,6 +18,9 @@ Configuration Configuration::fromYaml(const std::string& path) {
         if (const auto& logging = yaml["logging"]) {
             config.log_level = logging["level"].as<std::string>("debug");
         }
+        if (yaml["packet_def"]) {
+            config.packet_def_path = yaml["packet_def"].as<std::string>();
+        }
     } catch (const YAML::Exception& e) {
         spdlog::warn("Config parse error: {}. Using defaults.", e.what());
     }

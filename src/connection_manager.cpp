@@ -1,19 +1,30 @@
 #include "connection_manager.hpp"
+#include "packet_parser.hpp"
+#include "packet_handler.hpp"
 #include <spdlog/spdlog.h>
 
-ConnectionManager::ConnectionManager(boost::asio::ip::tcp::socket& socket)
+ConnectionManager::ConnectionManager(boost::asio::ip::tcp::socket& socket, const PacketDb& packet_db)
     : socket_(socket)
     , address_(socket.remote_endpoint().address().to_string())
+    , packet_processor_(packet_db)
 {
     decoder_.setPacketHandler([this](std::span<const uint8_t> packet) {
         this->handlePacket(packet);
     });
+    packet_processor_.setHandler(std::shared_ptr<PacketHandler>(this, [](PacketHandler*) {})); // No delete this
 }
 
 void ConnectionManager::handlePacket(std::span<const uint8_t> packet) {
     spdlog::debug("Decoded packet of {} bytes from {}", packet.size(), address_);
-    // TODO implement packet decoding logic here
-    // For now, just send an ACK response
+    packet_processor_.processPacket(packet);
+}
+
+void ConnectionManager::onPacketField(const FieldView& field) {
+    // TODO render packet on template, publish it on MQTT
+    spdlog::debug("Field {} received in packet", field.desc.name);
+}
+
+void ConnectionManager::onPacketComplete(std::span<const uint8_t> rawPacket) {
     sendResponse(slip::Decoder::makeResponse(slip::ACK));
 }
 
