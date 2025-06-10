@@ -36,11 +36,15 @@ CPMAddPackage(
     "BOOST_INCLUDE_LIBRARIES=core;asio;system;assert;config;program_options"
 )
 
+CPMAddPackage(
+  NAME boost_mqtt5
+  GITHUB_REPOSITORY boostorg/mqtt5
+  GIT_TAG boost-1.88.0
+  OPTIONS "BOOST_ENABLE_CMAKE ON"
+)
+
 add_library(Boost::boost INTERFACE IMPORTED)
 target_include_directories(Boost::boost INTERFACE "${Boost_SOURCE_DIR}")
-
-# Traer async_mqtt
-CPMAddPackage("gh:redboltz/async_mqtt#10.1.0")
 
 
 add_executable(tcp_mqtt_bridge
@@ -52,6 +56,7 @@ add_executable(tcp_mqtt_bridge
     src/packet_parser.cpp
     src/packet_parser_yaml.cpp
     src/packet_processor.cpp
+    src/mqtt_client.cpp
 )
 
 target_link_libraries(tcp_mqtt_bridge
@@ -64,7 +69,7 @@ target_link_libraries(tcp_mqtt_bridge
         Boost::system
         Boost::core
         Boost::program_options
-        async_mqtt_iface
+        Boost::mqtt5
         cpptrace::cpptrace
         )
 

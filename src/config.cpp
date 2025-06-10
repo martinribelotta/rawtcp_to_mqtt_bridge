@@ -14,6 +14,12 @@ Configuration Configuration::fromYaml(const std::string& path) {
             if (const auto& topics = mqtt["topics"]) {
                 config.mqtt.topics = topics.as<std::vector<std::string>>();
             }
+            if (mqtt["topic_template"]) {
+                config.mqtt.topic_template = mqtt["topic_template"].as<std::string>();
+            }
+            if (mqtt["payload_template"]) {
+                config.mqtt.payload_template = mqtt["payload_template"].as<std::string>();
+            }
         }
         if (const auto& logging = yaml["logging"]) {
             config.log_level = logging["level"].as<std::string>("debug");

@@ -6,6 +6,7 @@
 #include "packet_parser.hpp"
 #include "packet_handler.hpp"
 #include "packet_processor.hpp"
+#include "mqtt_client.hpp"
 
 #include <boost/asio.hpp>
 #include <memory>
@@ -13,7 +14,7 @@
 
 class ConnectionManager : public PacketHandler {
 public:
-    explicit ConnectionManager(boost::asio::ip::tcp::socket& socket, const PacketDb& packet_db);
+    explicit ConnectionManager(boost::asio::ip::tcp::socket& socket, const PacketDb& packet_db, MqttClient& mqtt_client);
     ~ConnectionManager() = default;
 
     // Prevent copying
@@ -41,6 +42,7 @@ private:
     std::string address_;
     PacketProcessor packet_processor_;
     slip::Decoder decoder_;
+    MqttClient& mqtt_client_;
 };
 
 #endif // TCP_MQTT_BRIDGE_CONNECTION_MANAGER_HPP

@@ -7,15 +7,17 @@ ServerManager::ServerManager(const Configuration& config, const PacketDb& packet
     , server_(io_ctx_, 
              boost::asio::ip::make_address(config.tcp.bind_address), 
              config.tcp.port)
+    , mqtt_client_(std::make_unique<MqttClient>(io_ctx_, config.mqtt))
     , packet_db_(packet_db)
 {
     setupEventHandlers();
+    mqtt_client_->connect();
 }
 
 void ServerManager::setupEventHandlers() {
     TcpEvents events;
     events.onConnect = [this](auto& socket, auto context) {
-        auto manager = std::make_shared<ConnectionManager>(socket, packet_db_);
+        auto manager = std::make_shared<ConnectionManager>(socket, packet_db_, *mqtt_client_);
         context->set("connection_manager", manager);
         spdlog::info("New client connected from {}", manager->address());
     };
@@ -38,6 +40,7 @@ void ServerManager::setupEventHandlers() {
 void ServerManager::run() {
     spdlog::info("TCP server listening on {}:{}", 
                  config_.tcp.bind_address, config_.tcp.port);
+    spdlog::info("MQTT broker connection to {}", config_.mqtt.broker);
     io_ctx_.run();
 }
 
@@ -48,6 +51,9 @@ ServerManager::~ServerManager() {
 void ServerManager::stop() {
     if (!stopped_) {
         stopped_ = true;
+        if (mqtt_client_) {
+            mqtt_client_->stop();
+        }
         boost::system::error_code ec;
         io_ctx_.stop();
     }

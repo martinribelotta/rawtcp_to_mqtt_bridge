@@ -6,6 +6,7 @@
 #include "packet_parser.hpp"
 #include "packet_parser_yaml.hpp"
 #include "slip.hpp"
+#include "mqtt_client.hpp"
 #include <boost/asio.hpp>
 
 class ServerManager {
@@ -25,6 +26,7 @@ private:
 
     boost::asio::io_context io_ctx_;
     TcpServer server_;
+    std::unique_ptr<MqttClient> mqtt_client_;
     const Configuration& config_;
     const PacketDb& packet_db_;
     bool stopped_{false};

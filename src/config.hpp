@@ -18,6 +18,8 @@ public:
         std::string broker = "tcp://localhost:1883";
         std::string client_id = "tcp_bridge";
         std::vector<std::string> topics;
+        std::string topic_template = "device/{packet_name}/{field_name}";  // Template for MQTT topic
+        std::string payload_template = "{value}";  // Template for MQTT payload
     };
 
     TcpConfig tcp;
