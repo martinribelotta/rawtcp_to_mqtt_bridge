@@ -24,6 +24,13 @@ CPMAddPackage(
 CPMAddPackage("gh:jbeder/yaml-cpp#0.8.0")           # YAML parser
 CPMAddPackage("gh:nlohmann/json@3.11.3")            # JSON parser (optional)
 CPMAddPackage("gh:jeremy-rifkin/cpptrace@0.8.3")    # Stack trace library (cpptrace)
+CPMAddPackage("gh:nlohmann/json@3.12.0")            # JSON parser (nlohmann_json)
+
+add_library(nlohmann INTERFACE IMPORTED)
+
+SET(INJA_USE_EMBEDDED_JSON OFF)
+
+CPMAddPackage("gh:pantor/inja#v3.4.0")              # Templating engine (inja)
 
 set(Boost_NO_SYSTEM_PATHS ON) # Importante: fuerza a ignorar Boost del sistema
 
@@ -45,7 +52,6 @@ CPMAddPackage(
 
 add_library(Boost::boost INTERFACE IMPORTED)
 target_include_directories(Boost::boost INTERFACE "${Boost_SOURCE_DIR}")
-
 
 add_executable(tcp_mqtt_bridge
     src/main.cpp
@@ -70,6 +76,7 @@ target_link_libraries(tcp_mqtt_bridge
         Boost::core
         Boost::program_options
         Boost::mqtt5
+        pantor::inja
         cpptrace::cpptrace
         )
 

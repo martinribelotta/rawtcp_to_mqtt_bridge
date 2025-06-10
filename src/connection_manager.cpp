@@ -1,36 +1,44 @@
 #include "connection_manager.hpp"
 #include "packet_parser.hpp"
-#include "packet_handler.hpp"
 #include <spdlog/spdlog.h>
+#include <inja/inja.hpp>
 
 ConnectionManager::ConnectionManager(boost::asio::ip::tcp::socket& socket, const PacketDb& packet_db, MqttClient& mqtt_client)
     : socket_(socket)
     , address_(socket.remote_endpoint().address().to_string())
     , packet_processor_(packet_db)
     , mqtt_client_(mqtt_client)
+    , config_(mqtt_client.getConfig())
 {
     decoder_.setPacketHandler([this](std::span<const uint8_t> packet) {
         this->handlePacket(packet);
     });
-    packet_processor_.setHandler(std::shared_ptr<PacketHandler>(this, [](PacketHandler*) {})); // No delete this
 }
 
 void ConnectionManager::handlePacket(std::span<const uint8_t> packet) {
     spdlog::debug("Decoded packet of {} bytes from {}", packet.size(), address_);
-    packet_processor_.processPacket(packet);
-}
-
-void ConnectionManager::onPacketField(const FieldView& field) {
-    // Log detailed information about the field
-    spdlog::debug("Field received in packet: {} = {}", field.desc.to_string(), field.value.to_string());
-
-    // // Publish field to MQTT
-    // std::string topic = fmt::format("device/{}/{}", field.desc.packet_name(), field.desc.field_name());
-    // std::string payload = field.value.to_string();
-    // mqtt_client_.publish(topic, payload);
-}
-
-void ConnectionManager::onPacketComplete(std::span<const uint8_t> rawPacket) {
+    auto [packet_size, fields_count] = packet_processor_.processPacket(packet);
+    
+    // Get the collected JSON data
+    const auto& json_data = packet_processor_.getJsonDb();
+    
+    // Create inja environment and render templates
+    inja::Environment env;
+    
+    try {
+        // Render topic using the template
+        std::string rendered_topic = env.render(config_.topic_template, json_data);
+        // Render payload using the template
+        std::string rendered_payload = env.render(config_.payload_template, json_data);
+        
+        // Publish to MQTT
+        mqtt_client_.publish(rendered_topic, rendered_payload);
+        
+        spdlog::debug("Published MQTT message - Topic: {}, Payload: {}", rendered_topic, rendered_payload);
+    } catch (const std::exception& e) {
+        spdlog::error("Error rendering MQTT templates: {}", e.what());
+    }
+    
     sendResponse(slip::Decoder::makeResponse(slip::ACK));
 }
 

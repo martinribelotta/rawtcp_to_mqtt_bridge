@@ -4,7 +4,6 @@
 #include "tcp_context.hpp"
 #include "slip.hpp"
 #include "packet_parser.hpp"
-#include "packet_handler.hpp"
 #include "packet_processor.hpp"
 #include "mqtt_client.hpp"
 
@@ -12,7 +11,7 @@
 #include <memory>
 #include <string>
 
-class ConnectionManager : public PacketHandler {
+class ConnectionManager {
 public:
     explicit ConnectionManager(boost::asio::ip::tcp::socket& socket, const PacketDb& packet_db, MqttClient& mqtt_client);
     ~ConnectionManager() = default;
@@ -24,10 +23,6 @@ public:
     // Allow moving
     ConnectionManager(ConnectionManager&&) noexcept = default;
     ConnectionManager& operator=(ConnectionManager&&) noexcept = default;
-
-    // Interfaz PacketHandler
-    void onPacketField(const FieldView& field) override;
-    void onPacketComplete(std::span<const uint8_t> rawPacket) override;
 
     void handlePacket(std::span<const uint8_t> packet);
     void handleData(std::span<const uint8_t> data);
@@ -43,6 +38,7 @@ private:
     PacketProcessor packet_processor_;
     slip::Decoder decoder_;
     MqttClient& mqtt_client_;
+    const Configuration::MqttConfig& config_;
 };
 
 #endif // TCP_MQTT_BRIDGE_CONNECTION_MANAGER_HPP

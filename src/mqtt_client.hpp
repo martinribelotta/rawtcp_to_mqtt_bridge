@@ -23,6 +23,9 @@ public:
     // Stop the MQTT client
     void stop();
 
+    // Get MQTT configuration
+    const Configuration::MqttConfig& getConfig() const { return config_; }
+
 private:
     void setup_client();
     void handle_close();
