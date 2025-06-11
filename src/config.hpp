@@ -15,11 +15,17 @@ public:
     };
 
     struct MqttConfig {
-        std::string broker = "tcp://localhost:1883";
+        std::string host = "localhost";
+        uint16_t port = 1883;
         std::string client_id = "tcp_bridge";
         std::vector<std::string> topics;
         std::string topic_template = "device/{packet_name}/{field_name}";  // Template for MQTT topic
         std::string payload_template = "{value}";  // Template for MQTT payload
+
+        // Helper to get the full broker URL
+        std::string getBrokerUrl() const {
+            return fmt::format("tcp://{}:{}", host, port);
+        }
     };
 
     TcpConfig tcp;

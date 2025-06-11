@@ -5,9 +5,8 @@
 #include <boost/asio/strand.hpp>
 
 MqttClient::MqttClient(boost::asio::io_context& ioc, const Configuration::MqttConfig& config)
-    : io_ctx_(ioc)
-    , config_(config)
-    , client_(std::make_shared<client_t>(ioc))
+    : config_(config)
+    , client_(ioc, {} /* tls_context */, boost::mqtt5::logger(boost::mqtt5::log_level::error))
 {
     setup_client();
 }
@@ -19,17 +18,27 @@ MqttClient::~MqttClient()
 
 void MqttClient::setup_client()
 {
-    client_->brokers(config_.broker);
+    client_.brokers(config_.host, config_.port);
 }
 
 void MqttClient::connect()
 {
-    client_->async_run(boost::asio::detached);
+    spdlog::info("Connecting to MQTT broker at {}:{}", config_.host, config_.port);
+    client_.async_run(
+        [this](boost::system::error_code ec) {
+            if (ec) {
+                spdlog::error("Failed to connect to MQTT broker: {}", ec.message());
+                handle_error(ec);
+            } else {
+                spdlog::info("Connected to MQTT broker at {}:{}", config_.host, config_.port);
+            }
+        }
+    );
 }
 
 void MqttClient::publish(const std::string& topic, const std::string& payload, uint8_t qos)
 {
-    client_->async_publish<boost::mqtt5::qos_e::at_most_once>(
+    client_.async_publish<boost::mqtt5::qos_e::at_most_once>(
         topic,
         payload,
         boost::mqtt5::retain_e::yes, boost::mqtt5::publish_props {},
@@ -45,7 +54,7 @@ void MqttClient::publish(const std::string& topic, const std::string& payload, u
 }
 
 void MqttClient::stop() {
-    client_->async_disconnect(
+    client_.async_disconnect(
         [this](boost::system::error_code ec) {
             if (ec) {
                 spdlog::error("Error during MQTT client disconnect: {}", ec.message());
@@ -75,7 +84,5 @@ void MqttClient::handle_error(boost::system::error_code const& ec)
 
 void MqttClient::handle_close()
 {
-    connected_ = false;
-    stopped_ = true;
     spdlog::info("MQTT client has been stopped.");
 }

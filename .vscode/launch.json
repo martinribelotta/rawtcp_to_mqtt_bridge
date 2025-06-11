@@ -11,7 +11,7 @@
             "program": "${workspaceFolder}/build/tcp_mqtt_bridge",
             "args": [ "-c", "${workspaceFolder}/config/config.yaml" ],
             "stopAtEntry": false,
-            "cwd": "${fileDirname}",
+            "cwd": "${workspaceFolder}",
             "environment": [],
             "externalConsole": false,
             "MIMode": "gdb",

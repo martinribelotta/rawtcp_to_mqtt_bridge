@@ -2,12 +2,10 @@
 #define TCP_MQTT_BRIDGE_MQTT_CLIENT_HPP
 
 #include "config.hpp"
+
 #include <boost/asio.hpp>
 #include <boost/mqtt5.hpp>
-#include <memory>
 #include <string>
-#include <mutex>
-#include <thread>
 
 class MqttClient {
 public:
@@ -31,14 +29,14 @@ private:
     void handle_close();
     void handle_error(boost::system::error_code const& ec);
 
-    boost::asio::io_context& io_ctx_;
     const Configuration::MqttConfig& config_;
 
-    using client_t =  boost::mqtt5::mqtt_client<boost::asio::ip::tcp::socket, std::monostate, boost::mqtt5::logger>;
+    using client_t =  boost::mqtt5::mqtt_client<
+            boost::asio::ip::tcp::socket,
+            std::monostate,
+            boost::mqtt5::logger>;
 
-    std::shared_ptr<client_t> client_;
-    std::atomic<bool> connected_{false};
-    std::atomic<bool> stopped_{false};
+    client_t client_;
 };
 
 #endif // TCP_MQTT_BRIDGE_MQTT_CLIENT_HPP

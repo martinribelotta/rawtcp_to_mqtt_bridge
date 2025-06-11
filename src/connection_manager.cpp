@@ -30,11 +30,11 @@ void ConnectionManager::handlePacket(std::span<const uint8_t> packet) {
         std::string rendered_topic = env.render(config_.topic_template, json_data);
         // Render payload using the template
         std::string rendered_payload = env.render(config_.payload_template, json_data);
+
+        spdlog::debug("Publishing MQTT message - Topic: {}, Payload: {}", rendered_topic, rendered_payload);
         
         // Publish to MQTT
         mqtt_client_.publish(rendered_topic, rendered_payload);
-        
-        spdlog::debug("Published MQTT message - Topic: {}, Payload: {}", rendered_topic, rendered_payload);
     } catch (const std::exception& e) {
         spdlog::error("Error rendering MQTT templates: {}", e.what());
     }

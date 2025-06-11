@@ -9,7 +9,24 @@ Configuration Configuration::fromYaml(const std::string& path) {
             config.tcp.bind_address = tcp["bind"].as<std::string>();
         }
         if (const auto& mqtt = yaml["mqtt"]) {
-            config.mqtt.broker = mqtt["broker"].as<std::string>();
+            // Convert from old format if "broker" is present
+            if (mqtt["broker"]) {
+                std::string broker = mqtt["broker"].as<std::string>();
+                if (broker.substr(0, 6) == "tcp://") {
+                    broker = broker.substr(6);
+                }
+                auto colon_pos = broker.find(':');
+                if (colon_pos != std::string::npos) {
+                    config.mqtt.host = broker.substr(0, colon_pos);
+                    config.mqtt.port = std::stoi(broker.substr(colon_pos + 1));
+                } else {
+                    config.mqtt.host = broker;
+                    config.mqtt.port = 1883;
+                }
+            } else {
+                config.mqtt.host = mqtt["host"].as<std::string>("localhost");
+                config.mqtt.port = mqtt["port"].as<uint16_t>(1883);
+            }
             config.mqtt.client_id = mqtt["client_id"].as<std::string>();
             if (const auto& topics = mqtt["topics"]) {
                 config.mqtt.topics = topics.as<std::vector<std::string>>();

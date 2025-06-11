@@ -3,7 +3,8 @@ tcp:
   bind: "0.0.0.0"
 
 mqtt:
-  broker: "tcp://localhost:1883"
+  host: "localhost"
+  port: 1883
   client_id: "tcp_bridge"
   topics:
     - "device/+"

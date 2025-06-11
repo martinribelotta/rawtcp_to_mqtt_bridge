@@ -40,7 +40,7 @@ void ServerManager::setupEventHandlers() {
 void ServerManager::run() {
     spdlog::info("TCP server listening on {}:{}", 
                  config_.tcp.bind_address, config_.tcp.port);
-    spdlog::info("MQTT broker connection to {}", config_.mqtt.broker);
+    spdlog::info("MQTT broker connection to {}:{}", config_.mqtt.host, config_.mqtt.port);
     io_ctx_.run();
 }
 
