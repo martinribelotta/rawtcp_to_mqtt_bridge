@@ -6,9 +6,8 @@
 ConnectionManager::ConnectionManager(boost::asio::ip::tcp::socket& socket, const PacketDb& packet_db, MqttClient& mqtt_client)
     : socket_(socket)
     , address_(socket.remote_endpoint().address().to_string())
-    , packet_processor_(packet_db)
+    , packet_processor_(packet_db, mqtt_client)
     , mqtt_client_(mqtt_client)
-    , config_(mqtt_client.getConfig())
 {
     decoder_.setPacketHandler([this](std::span<const uint8_t> packet) {
         this->handlePacket(packet);
@@ -17,26 +16,9 @@ ConnectionManager::ConnectionManager(boost::asio::ip::tcp::socket& socket, const
 
 void ConnectionManager::handlePacket(std::span<const uint8_t> packet) {
     spdlog::debug("Decoded packet of {} bytes from {}", packet.size(), address_);
-    auto [packet_size, fields_count] = packet_processor_.processPacket(packet);
     
-    // Get the collected JSON data
-    const auto& json_data = packet_processor_.getJsonDb();
-    
-    // Create inja environment and render templates
-    inja::Environment env;
-    
-    try {
-        // Render topic using the template
-        std::string rendered_topic = env.render(config_.topic_template, json_data);
-        // Render payload using the template
-        std::string rendered_payload = env.render(config_.payload_template, json_data);
-
-        spdlog::debug("Publishing MQTT message - Topic: {}, Payload: {}", rendered_topic, rendered_payload);
-        
-        // Publish to MQTT
-        mqtt_client_.publish(rendered_topic, rendered_payload);
-    } catch (const std::exception& e) {
-        spdlog::error("Error rendering MQTT templates: {}", e.what());
+    if (auto mqtt_message = packet_processor_.processPacket(packet)) {
+        mqtt_client_.publish(mqtt_message->topic, mqtt_message->payload);
     }
     
     sendResponse(slip::Decoder::makeResponse(slip::ACK));

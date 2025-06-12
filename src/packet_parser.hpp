@@ -57,11 +57,17 @@ struct FieldDesc {
     std::string to_string() const;
 };
 
+struct MqttTemplate {
+    std::string topic;
+    std::string payload;
+};
+
 struct PacketDesc {
     std::string name;
     std::vector<FieldDesc> fields;
     size_t id_field_index;
     FieldValue id_value;
+    MqttTemplate mqtt;
 };
 
 using PacketDb = std::vector<PacketDesc>;
@@ -72,7 +78,7 @@ struct FieldView {
     FieldValue value;  // The extracted value of the field
 };
 
-using FieldVisitor = std::function<void(const FieldView&)>;
+using FieldVisitor = std::function<void(const FieldView&, const PacketDesc&)>;
 
 std::pair<size_t, size_t> scan_packets(const PacketDb& db, std::span<const uint8_t> data, const FieldVisitor& visitor);
 

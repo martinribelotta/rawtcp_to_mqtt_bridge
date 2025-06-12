@@ -152,7 +152,7 @@ std::pair<size_t, size_t> scan_packets(const PacketDb& db, std::span<const uint8
                     std::span<const uint8_t>(view.data() + field.offset, len), 
                     field,
                     field_value
-                });
+                }, packet);
             }
 
             offset += required_size;

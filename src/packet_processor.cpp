@@ -2,22 +2,39 @@
 
 #include <spdlog/spdlog.h>
 
-PacketProcessor::PacketProcessor(const PacketDb& packet_db)
+PacketProcessor::PacketProcessor(const PacketDb& packet_db, MqttClient& mqtt_client)
     : packet_db_(packet_db)
+    , mqtt_client_(mqtt_client)
 {
 }
 
-std::pair<size_t, size_t> PacketProcessor::processPacket(std::span<const uint8_t> packet)
+std::optional<PacketProcessor::MqttMessage> PacketProcessor::processPacket(std::span<const uint8_t> packet)
 {
     json_db.clear();
+    const PacketDesc* current_packet = nullptr;
 
     auto result = scan_packets(packet_db_, packet, 
-        [this](const FieldView& field) {
-            // TODO render here
+        [this, &current_packet](const FieldView& field, const PacketDesc& packet) {
+            if (!current_packet) current_packet = &packet;
             auto name = field.desc.name;
             auto value = field.value.to_string();
             json_db[name] = value;
             spdlog::debug("Field: {} = {}", name, value);
         });
-    return result;
+    
+    if (!current_packet) {
+        spdlog::error("No packet matched the input data");
+        return std::nullopt;
+    }
+
+    try {
+        inja::Environment env;
+        std::string rendered_topic = env.render(current_packet->mqtt.topic, json_db);
+        std::string rendered_payload = env.render(current_packet->mqtt.payload, json_db);
+        spdlog::debug("Generated MQTT message - Topic: {}, Payload: {}", rendered_topic, rendered_payload);
+        return MqttMessage{rendered_topic, rendered_payload};
+    } catch (const std::exception& e) {
+        spdlog::error("Error rendering MQTT templates: {}", e.what());
+        return std::nullopt;
+    }
 }

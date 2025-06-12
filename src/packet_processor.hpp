@@ -2,6 +2,8 @@
 #define TCP_MQTT_BRIDGE_PACKET_PROCESSOR_HPP
 
 #include "packet_parser.hpp"
+#include "mqtt_client.hpp"
+
 #include <memory>
 #include <span>
 
@@ -10,18 +12,20 @@
 class PacketProcessor {
 public:
     using json_t = nlohmann::json;
+    struct MqttMessage {
+        std::string topic;
+        std::string payload;
+    };
 
-    explicit PacketProcessor(const PacketDb& packet_db);
+    PacketProcessor(const PacketDb& packet_db, MqttClient& mqtt_client);
 
-    // Procesa un paquete y notifica al handler
-    std::pair<size_t, size_t> processPacket(std::span<const uint8_t> packet);
-
-    json_t& getJsonDb() { return json_db; }
-    const json_t& getJsonDb() const { return json_db; }
+    // Procesa un paquete y retorna un mensaje MQTT opcional
+    std::optional<MqttMessage> processPacket(std::span<const uint8_t> packet);
 
 private:
     json_t json_db;
     const PacketDb& packet_db_;
+    MqttClient& mqtt_client_;
 };
 
 #endif // TCP_MQTT_BRIDGE_PACKET_PROCESSOR_HPP

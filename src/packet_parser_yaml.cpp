@@ -78,7 +78,16 @@ PacketDb packetdb_from_yaml(const std::string& yaml_text) {
     for (auto it = root.begin(); it != root.end(); ++it) {
         PacketDesc pkt;
         pkt.name = it->first.as<std::string>();
-        const YAML::Node& fields = it->second;
+        const YAML::Node& packet_node = it->second;
+        
+        // Parse MQTT templates if present
+        if (const YAML::Node& mqtt = packet_node["mqtt"]) {
+            if (mqtt["topic"]) pkt.mqtt.topic = mqtt["topic"].as<std::string>();
+            if (mqtt["payload"]) pkt.mqtt.payload = mqtt["payload"].as<std::string>();
+        }
+
+        // Parse fields
+        const YAML::Node& fields = packet_node["fields"];
         if (!fields.IsSequence()) throw std::runtime_error("Packet " + pkt.name + " must have a sequence of fields");
         size_t field_idx = 0;
         bool found_id = false;

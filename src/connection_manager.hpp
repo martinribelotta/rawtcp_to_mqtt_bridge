@@ -38,7 +38,6 @@ private:
     PacketProcessor packet_processor_;
     slip::Decoder decoder_;
     MqttClient& mqtt_client_;
-    const Configuration::MqttConfig& config_;
 };
 
 #endif // TCP_MQTT_BRIDGE_CONNECTION_MANAGER_HPP
