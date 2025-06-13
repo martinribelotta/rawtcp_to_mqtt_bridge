@@ -60,6 +60,8 @@ struct FieldDesc {
 struct MqttTemplate {
     std::string topic;
     std::string payload;
+    uint8_t qos = 0;       // default: at most once
+    bool retain = false;    // default: don't retain
 };
 
 struct PacketDesc {

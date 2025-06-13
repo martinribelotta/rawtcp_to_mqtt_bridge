@@ -9,6 +9,8 @@ status_report:
         "uptime": {{uptime}},
         "message": "{{message}}"
       }
+    qos: 1          # 0: at most once, 1: at least once, 2: exactly once
+    retain: true    # retain last message on broker
   fields:
     - name: packet_type
       type: uint8

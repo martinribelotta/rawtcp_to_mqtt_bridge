@@ -36,16 +36,16 @@ void MqttClient::connect()
     );
 }
 
-void MqttClient::publish(const std::string& topic, const std::string& payload, PublishCallback callback, uint8_t qos)
+void MqttClient::publish(const std::string& topic, const std::string& payload, PublishCallback callback, uint8_t qos, bool retain)
 {
-    auto  retain = boost::mqtt5::retain_e::no;
+    auto retain_flag = retain ? boost::mqtt5::retain_e::yes : boost::mqtt5::retain_e::no;
     boost::mqtt5::publish_props props;
 
     switch (qos) {
         case 0:
             client_.async_publish<boost::mqtt5::qos_e::at_most_once>(
                 topic, payload,
-                retain, props,
+                retain_flag, props,
                 [this, callback = std::move(callback)](boost::system::error_code ec) {
                     handle_error(ec);
                     callback(ec);
@@ -55,7 +55,7 @@ void MqttClient::publish(const std::string& topic, const std::string& payload, P
         case 1:
             client_.async_publish<boost::mqtt5::qos_e::at_least_once>(
                 topic, payload,
-                retain, props,
+                retain_flag, props,
                 [this, callback = std::move(callback)](boost::system::error_code ec, boost::mqtt5::reason_code rc, boost::mqtt5::puback_props) {
                     handle_error(ec);
                     callback(ec);
@@ -65,7 +65,7 @@ void MqttClient::publish(const std::string& topic, const std::string& payload, P
         case 2:
             client_.async_publish<boost::mqtt5::qos_e::exactly_once>(
                 topic, payload,
-                retain, props,
+                retain_flag, props,
                 [this, callback = std::move(callback)](boost::system::error_code ec, boost::mqtt5::reason_code rc, boost::mqtt5::pubcomp_props) {
                     handle_error(ec);
                     callback(ec);

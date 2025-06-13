@@ -84,6 +84,8 @@ PacketDb packetdb_from_yaml(const std::string& yaml_text) {
         if (const YAML::Node& mqtt = packet_node["mqtt"]) {
             if (mqtt["topic"]) pkt.mqtt.topic = mqtt["topic"].as<std::string>();
             if (mqtt["payload"]) pkt.mqtt.payload = mqtt["payload"].as<std::string>();
+            if (mqtt["qos"]) pkt.mqtt.qos = mqtt["qos"].as<uint8_t>();
+            if (mqtt["retain"]) pkt.mqtt.retain = mqtt["retain"].as<bool>();
         }
 
         // Parse fields

@@ -15,6 +15,8 @@ public:
     struct MqttMessage {
         std::string topic;
         std::string payload;
+        uint8_t qos;
+        bool retain;
     };
 
     PacketProcessor(const PacketDb& packet_db, MqttClient& mqtt_client);

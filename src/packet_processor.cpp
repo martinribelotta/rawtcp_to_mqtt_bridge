@@ -31,7 +31,12 @@ std::optional<PacketProcessor::MqttMessage> PacketProcessor::processPacket(std::
         inja::Environment env;
         std::string rendered_topic = env.render(current_packet->mqtt.topic, json_db);
         std::string rendered_payload = env.render(current_packet->mqtt.payload, json_db);
-        return MqttMessage{rendered_topic, rendered_payload};
+        return MqttMessage{
+            rendered_topic,
+            rendered_payload,
+            current_packet->mqtt.qos,
+            current_packet->mqtt.retain
+        };
     } catch (const std::exception& e) {
         spdlog::error("Error rendering MQTT templates: {}", e.what());
         return std::nullopt;

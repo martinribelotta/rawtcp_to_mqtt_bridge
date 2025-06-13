@@ -30,7 +30,9 @@ void ConnectionManager::handlePacket(std::span<const uint8_t> packet) {
                     sendResponse(slip::Decoder::makeResponse(slip::ACK));
                 }
             },
-            1);
+            mqtt_message->qos,
+            mqtt_message->retain
+        );
     }
 }
 

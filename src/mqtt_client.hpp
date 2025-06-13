@@ -13,12 +13,9 @@ public:
     ~MqttClient();
 
     // Connect to the MQTT broker
-    void connect();
-
-    // Publish a message to a topic
+    void connect();    // Publish a message to a topic
     using PublishCallback = std::function<void(boost::system::error_code)>;
-
-    void publish(const std::string& topic, const std::string& payload, PublishCallback callback, uint8_t qos = 1);
+    void publish(const std::string& topic, const std::string& payload, PublishCallback callback, uint8_t qos = 1, bool retain = false);
 
     // Stop the MQTT client
     void stop();
