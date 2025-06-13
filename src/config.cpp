@@ -32,8 +32,13 @@ Configuration Configuration::fromYaml(const std::string& path) {
         if (const auto& logging = yaml["logging"]) {
             config.log_level = logging["level"].as<std::string>("debug");
         }
-        if (yaml["packet_def"]) {
-            config.packet_def_path = yaml["packet_def"].as<std::string>();
+        if (const auto& packet_defs = yaml["packet_defs"]) {
+            if (const auto& paths = packet_defs["paths"]) {
+                config.packet_defs.paths = paths.as<std::vector<std::string>>();
+            }
+            if (const auto& patterns = packet_defs["patterns"]) {
+                config.packet_defs.patterns = patterns.as<std::vector<std::string>>();
+            }
         }
     } catch (const YAML::Exception& e) {
         spdlog::warn("Config parse error: {}. Using defaults.", e.what());

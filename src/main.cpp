@@ -43,58 +43,91 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    std::string config_path = vm["config"].as<std::string>();
-    // If path is relative, make it relative to current directory
-    if (!config_path.empty() && config_path[0] != '/') {
-        std::filesystem::path current = std::filesystem::current_path();
-        std::filesystem::path config_file(config_path);
-        config_path = (current / config_file).string();
-    }
-    auto config = Configuration::fromYaml(config_path);
+    try { 
+        std::string config_path = vm["config"].as<std::string>();
+        // If path is relative, make it relative to current directory
+        if (!config_path.empty() && config_path[0] != '/') {
+            std::filesystem::path current = std::filesystem::current_path();
+            std::filesystem::path config_file(config_path);
+            config_path = (current / config_file).string();
+        }
+        auto config = Configuration::fromYaml(config_path);
 
-    // Set log level from config, can be overridden by command line
-    spdlog::set_level(Configuration::parseLogLevel(config.log_level));
+        // Set log level from config, can be overridden by command line
+        spdlog::set_level(Configuration::parseLogLevel(config.log_level));
 
-    // Override with command line if specified
-    if (vm.count("log-level")) {
-        spdlog::set_level(Configuration::parseLogLevel(vm["log-level"].as<std::string>()));
-    } else if (vm.count("verbose")) {
-        spdlog::set_level(spdlog::level::debug);
-    }
+        // Override with command line if specified
+        if (vm.count("log-level")) {
+            spdlog::set_level(Configuration::parseLogLevel(vm["log-level"].as<std::string>()));
+        } else if (vm.count("verbose")) {
+            spdlog::set_level(spdlog::level::debug);
+        }
 
-    // Override with command line if specified
-    if (vm.count("port")) config.tcp.port = vm["port"].as<unsigned short>();
-    if (vm.count("bind")) config.tcp.bind_address = vm["bind"].as<std::string>();
+        // Override with command line if specified
+        if (vm.count("port")) config.tcp.port = vm["port"].as<unsigned short>();
+        if (vm.count("bind")) config.tcp.bind_address = vm["bind"].as<std::string>();
 
-    // Resolver packet_def_path relativo al archivo de configuración si no es absoluto
-    std::filesystem::path packet_def_path(config.packet_def_path);
-    if (!config.packet_def_path.empty() && config.packet_def_path[0] != '/') {
+        // Process each packet definition directory
+        PacketDb packet_db;
         std::filesystem::path config_dir = std::filesystem::path(config_path).parent_path();
-        packet_def_path = config_dir / packet_def_path;
-    }
+        
+        for (const auto& path : config.packet_defs.paths) {
+            std::filesystem::path full_path = path[0] == '/' ? 
+                std::filesystem::path{path}: config_dir / path;
+            
+            if (!std::filesystem::exists(full_path)) {
+                spdlog::warn("Packet definitions path does not exist: {}", full_path.string());
+                continue;
+            }
 
-    // Load packet definitions
-    std::ifstream packet_file(packet_def_path.string());
-    if (!packet_file) {
-        spdlog::error("Could not open packet definitions file: {}", packet_def_path.string());
-        return 1;
-    }
-    
-    PacketDb packet_db;
-    try {
-        std::string yaml_content((std::istreambuf_iterator<char>(packet_file)),
-                               std::istreambuf_iterator<char>());
-        packet_db = packetdb_from_yaml(yaml_content);
-        spdlog::info("Loaded {} packet definitions", packet_db.size());
+            try {
+                for (const auto& pattern : config.packet_defs.patterns) {
+                    // Usar file_search para encontrar archivos que coincidan con el patrón
+                    for (const auto& entry : std::filesystem::recursive_directory_iterator(full_path)) {
+                        if (!entry.is_regular_file()) continue;
+                        
+                        const auto& file_path = entry.path();
+                        if (!std::filesystem::path(pattern).filename().string().empty() && 
+                            !file_path.filename().string().ends_with(pattern.substr(1))) {
+                            continue;
+                        }
+
+                        std::ifstream packet_file(file_path);
+                        if (!packet_file) {
+                            spdlog::error("Could not open packet definitions file: {}", file_path.string());
+                            continue;
+                        }
+
+                        std::string yaml_content((std::istreambuf_iterator<char>(packet_file)),
+                                            std::istreambuf_iterator<char>());
+                        auto new_packets = packetdb_from_yaml(yaml_content);
+                        packet_db.insert(packet_db.end(), new_packets.begin(), new_packets.end());
+                        spdlog::info("Loaded {} packet definitions from {}", 
+                                    new_packets.size(), file_path.string());
+                    }
+                }
+            } catch (const std::exception& e) {
+                spdlog::error("Error processing packet definitions in {}: {}", 
+                            full_path.string(), e.what());
+                return 1;
+            }
+        }
+
+        if (packet_db.empty()) {
+            spdlog::error("No packet definitions were loaded");
+            return 1;
+        }
+        
+        spdlog::info("Loaded {} total packet definitions", packet_db.size());
+
+        spdlog::info("Starting TCP <-> MQTT Bridge");
+
+        ServerManager server(config, packet_db);
+        server.run();
     } catch (const std::exception& e) {
         spdlog::error("Failed to parse packet definitions: {}", e.what());
         return 1;
     }
-
-    spdlog::info("Starting TCP <-> MQTT Bridge");
-
-    ServerManager server(config, packet_db);
-    server.run();
 
     return 0;
 }

@@ -10,4 +10,10 @@ mqtt:
 logging:
   level: "debug"
 
-packet_def: "packets.yaml"
+packet_defs:
+  paths:
+    - "packets"  # directorio relativo a config.yaml
+    - "/etc/tcp_mqtt_bridge/packets"  # directorio absoluto de ejemplo
+  patterns:
+    - "*.yaml"
+    - "*.yml"

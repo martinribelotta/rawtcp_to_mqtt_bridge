@@ -1,0 +1,29 @@
+# Command packet definition
+command_packet:
+  mqtt:
+    topic: "commands/{{command_id}}"
+    payload: |
+      {
+        "command": {{command_id}},
+        "params": {
+          "param1": {{param1}},
+          "param2": {{param2}}
+        }
+      }
+  fields:
+    - name: packet_type
+      type: uint8
+      offset: 0
+      value: 0x20  # Unique packet identifier
+
+    - name: command_id
+      type: uint8
+      offset: 1
+
+    - name: param1
+      type: uint32
+      offset: 2
+
+    - name: param2
+      type: uint32
+      offset: 6
