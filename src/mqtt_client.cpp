@@ -36,21 +36,47 @@ void MqttClient::connect()
     );
 }
 
-void MqttClient::publish(const std::string& topic, const std::string& payload, uint8_t qos)
+void MqttClient::publish(const std::string& topic, const std::string& payload, PublishCallback callback, uint8_t qos)
 {
-    client_.async_publish<boost::mqtt5::qos_e::at_most_once>(
-        topic,
-        payload,
-        boost::mqtt5::retain_e::yes, boost::mqtt5::publish_props {},
-        [this, topic, payload](boost::system::error_code ec) {
-            if (ec) {
-                spdlog::error("Failed to publish message to topic '{}': {}", topic, ec.message());
-                handle_error(ec);
-            } else {
-                spdlog::debug("Published message to topic '{}': {}", topic, payload);
-            }
-        }
-    );
+    auto  retain = boost::mqtt5::retain_e::no;
+    boost::mqtt5::publish_props props;
+
+    switch (qos) {
+        case 0:
+            client_.async_publish<boost::mqtt5::qos_e::at_most_once>(
+                topic, payload,
+                retain, props,
+                [this, callback = std::move(callback)](boost::system::error_code ec) {
+                    handle_error(ec);
+                    callback(ec);
+                }
+            );
+            break;
+        case 1:
+            client_.async_publish<boost::mqtt5::qos_e::at_least_once>(
+                topic, payload,
+                retain, props,
+                [this, callback = std::move(callback)](boost::system::error_code ec, boost::mqtt5::reason_code rc, boost::mqtt5::puback_props) {
+                    handle_error(ec);
+                    callback(ec);
+                }
+            );
+            break;
+        case 2:
+            client_.async_publish<boost::mqtt5::qos_e::exactly_once>(
+                topic, payload,
+                retain, props,
+                [this, callback = std::move(callback)](boost::system::error_code ec, boost::mqtt5::reason_code rc, boost::mqtt5::pubcomp_props) {
+                    handle_error(ec);
+                    callback(ec);
+                }
+            );
+            break;
+        default:
+            spdlog::error("Invalid QoS value: {}. Must be 0, 1, or 2.", qos);
+            callback(boost::asio::error::invalid_argument);
+            break;
+    }
 }
 
 void MqttClient::stop() {

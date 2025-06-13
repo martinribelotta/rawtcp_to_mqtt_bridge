@@ -18,10 +18,20 @@ void ConnectionManager::handlePacket(std::span<const uint8_t> packet) {
     spdlog::debug("Decoded packet of {} bytes from {}", packet.size(), address_);
     
     if (auto mqtt_message = packet_processor_.processPacket(packet)) {
-        mqtt_client_.publish(mqtt_message->topic, mqtt_message->payload);
+        mqtt_client_.publish(
+            mqtt_message->topic,
+            mqtt_message->payload,
+            [this](boost::system::error_code ec) {
+                if (ec) {
+                    spdlog::error("Failed to publish MQTT message: {}", ec.message());
+                    sendResponse(slip::Decoder::makeResponse(slip::NAK));
+                } else {
+                    spdlog::debug("MQTT message published successfully");
+                    sendResponse(slip::Decoder::makeResponse(slip::ACK));
+                }
+            },
+            1);
     }
-    
-    sendResponse(slip::Decoder::makeResponse(slip::ACK));
 }
 
 void ConnectionManager::handleData(std::span<const uint8_t> data) {
