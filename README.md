@@ -1,101 +1,131 @@
-# TCP <-> MQTT Bridge (C++20)
+# TCP <-> MQTT Bridge
 
-Modern C++20 TCP server with MQTT bridge capabilities, using CMake and CPM. Allows bidirectional communication between TCP clients and MQTT brokers.
+A high-performance bridge between TCP devices and MQTT brokers, with flexible packet parsing and templating capabilities.
 
-## Features
+## Overview
 
-- Modern C++20 implementation
-- Asynchronous TCP server using Boost.Asio
-- Event-driven architecture
-- Multi-client support
-- Automatic dependency management with CPM
-- MQTT Bridge capabilities using async_mqtt
-- SLIP protocol support for reliable data framing
-- Configuration via YAML
-- Comprehensive logging with spdlog
+This project provides a robust bridge between TCP-connected devices and MQTT brokers. It features:
+
+- **Flexible Packet Parsing**: Define your packet structures in YAML files with support for:
+  - Multiple data types (integers, floats, arrays)
+  - Bitfields for flag handling
+  - Fixed and variable length fields
+  - Automatic packet identification
+
+- **Smart MQTT Integration**:
+  - Per-packet MQTT topic and payload templates
+  - JSON payload formatting
+  - Template-based message transformation
+  - Dynamic topic generation based on packet content
+
+- **Reliable Communications**:
+  - SLIP framing protocol for reliable packet delimitation
+  - Asynchronous I/O for high performance
+  - Multi-client support
+  - Automatic reconnection handling
 
 ## Dependencies
 
-Core libraries:
-- [fmt 11.2.0](https://github.com/fmtlib/fmt) - Modern string formatting
-- [spdlog 1.13.0](https://github.com/gabime/spdlog) - Fast C++ logging library
-- [yaml-cpp 0.8.0](https://github.com/jbeder/yaml-cpp) - YAML parser and emitter
-- [nlohmann/json 3.11.3](https://github.com/nlohmann/json) - JSON for Modern C++
-- [Boost.Asio 1.84.0](https://github.com/boostorg/asio) - Networking library
-- [async_mqtt 10.1.0](https://github.com/redboltz/async_mqtt) - Asynchronous MQTT client
+The project is built with modern C++20 and uses:
 
-Required Boost components:
-- core
-- asio
-- system
-- assert
-- config
-
-## Building
-
-Requirements:
-- C++20 compiler
-- CMake 3.18+
-- Python 3.7+ (for testing)
-
-```bash
-git clone <repo>
-cd <repo>
-cmake -B build -DCMAKE_BUILD_TYPE=Release
-cmake --build build
-```
+### Core Components
+- [Boost 1.84.0+](https://www.boost.org/) - Core networking (Asio)
+- [async_mqtt](https://github.com/redboltz/async_mqtt) - MQTT client
+- [inja](https://github.com/pantor/inja) - Template engine
+- [yaml-cpp](https://github.com/jbeder/yaml-cpp) - YAML parsing
+- [nlohmann/json](https://github.com/nlohmann/json) - JSON handling
+- [fmt](https://github.com/fmtlib/fmt) & [spdlog](https://github.com/gabime/spdlog) - Logging
 
 ## Configuration
 
-Create a `config.yaml` file:
+The bridge uses two types of configuration files:
 
+### Main Configuration (`config.yaml`)
 ```yaml
 tcp:
   port: 12345
   bind: "0.0.0.0"
 mqtt:
-  broker: "tcp://localhost:1883"
+  host: "localhost"
+  port: 1883
   client_id: "tcp_bridge"
-  topics:
-    - "device/#"
+logging:
+  level: "debug"
+packet_defs:
+  paths:
+    - "packets"           # Relative to config.yaml
+    - "/etc/tcp_bridge/packets"  # Absolute path
+  patterns:
+    - "*.yaml"
+    - "*.yml"
 ```
 
-## Usage
+### Packet Definitions
+Packet structures are defined in YAML files that can be organized in directories. Example:
 
-### Running the Bridge
+```yaml
+sensor_data:
+  mqtt:
+    topic: "sensors/data_sensor_{{sensor_id}}"
+    payload: |
+      {
+        "temperature": {{temperature}},
+        "humidity": {{humidity}},
+        "pressure": {{pressure}}
+      }
+  fields:
+    - name: packet_type
+      type: uint8
+      offset: 0
+      value: 0x10  # Identifier
+
+    - name: sensor_id
+      type: uint16
+      offset: 1
+
+    - name: temperature
+      type: float32
+      offset: 3
+```
+
+## Building & Running
+
+Requirements:
+- C++20 compiler (GCC 10+, Clang 10+)
+- CMake 3.18+
+- Boost 1.84.0+
+
 ```bash
-./build/tcp_mqtt_bridge [--config config.yaml]
+# Build
+cmake -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build
+
+# Run
+./build/tcp_mqtt_bridge -c config.yaml
 ```
 
-### Testing
-
-1. TCP Test Client (multiple connections):
-```bash
-./scripts/test_conn.py --clients 10
-```
-
-2. MQTT Testing:
-```bash
-# Subscribe to messages
-mosquitto_sub -t "device/#"
-
-# Publish test message
-mosquitto_pub -t "device/test" -m "Hello"
-```
-
-## Architecture
-
-```
-TCP Client <-> TCP Server <-> SLIP Parser <-> MQTT Client <-> MQTT Broker
-```
+Command line options:
+- `-c, --config`: Configuration file path
+- `-p, --port`: TCP port (overrides config)
+- `-b, --bind`: Bind address (overrides config)
+- `-l, --log-level`: Set log level
+- `-v, --verbose`: Enable debug logging
+- `-h, --help`: Show help
 
 ## Project Structure
 
-- `src/`: Source code
-  - `main.cpp`: Application entry point
-  - `tcp_*.hpp`: TCP server components
-  - `mqtt_*.hpp`: MQTT bridge components (planned)
-  - `slip_*.hpp`: SLIP protocol handlers (planned)
-- `scripts/`: Test utilities
-- `config/`: Configuration examples
-- `docs/`: Additional documentation
+```
+├── config/
+│   ├── config.yaml          # Main configuration
+│   └── packets/             # Packet definitions
+│       ├── sensors/         # Organized by type
+│       ├── commands.yaml
+│       └── status.yaml
+├── src/
+│   ├── main.cpp            # Entry point
+│   ├── packet_*.{hpp,cpp}  # Packet processing
+│   ├── mqtt_*.{hpp,cpp}    # MQTT client
+│   └── tcp_*.{hpp,cpp}     # TCP server
+└── scripts/
+    └── test_conn.py        # Testing utilities
+```
