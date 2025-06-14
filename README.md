@@ -29,6 +29,7 @@ This project provides a robust bridge between TCP-connected devices and MQTT bro
 The project is built with modern C++20 and uses:
 
 ### Core Components
+
 - [Boost 1.84.0+](https://www.boost.org/) - Core networking (Asio)
 - [async_mqtt](https://github.com/redboltz/async_mqtt) - MQTT client
 - [inja](https://github.com/pantor/inja) - Template engine
@@ -41,6 +42,7 @@ The project is built with modern C++20 and uses:
 The bridge uses two types of configuration files:
 
 ### Main Configuration (`config.yaml`)
+
 ```yaml
 tcp:
   port: 12345
@@ -61,6 +63,7 @@ packet_defs:
 ```
 
 ### Packet Definitions
+
 Packet structures are defined in YAML files that can be organized in directories. Example:
 
 ```yaml
@@ -91,6 +94,7 @@ sensor_data:
 ## Building & Running
 
 Requirements:
+
 - C++20 compiler (GCC 10+, Clang 10+)
 - CMake 3.18+
 - Boost 1.84.0+
@@ -105,6 +109,7 @@ cmake --build build
 ```
 
 Command line options:
+
 - `-c, --config`: Configuration file path
 - `-p, --port`: TCP port (overrides config)
 - `-b, --bind`: Bind address (overrides config)
@@ -114,7 +119,7 @@ Command line options:
 
 ## Project Structure
 
-```
+```plaintext
 ├── config/
 │   ├── config.yaml          # Main configuration
 │   └── packets/             # Packet definitions
@@ -129,3 +134,7 @@ Command line options:
 └── scripts/
     └── test_conn.py        # Testing utilities
 ```
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
