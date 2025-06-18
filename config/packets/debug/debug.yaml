@@ -1,0 +1,28 @@
+# Debug packet definition
+debug_packet:
+  mqtt:
+    topic: "debug/{{debug_level}}"
+    payload: |
+      {
+        "timestamp": {{timestamp}},
+        "level": {{debug_level}},
+        "data": "{{debug_data}}"
+      }
+  fields:
+    - name: packet_type
+      type: uint8
+      offset: 0
+      value: 0xF0  # Unique packet identifier
+
+    - name: debug_level
+      type: uint8
+      offset: 1
+
+    - name: timestamp
+      type: uint64
+      offset: 2
+
+    - name: debug_data
+      type: bytearray
+      offset: 10
+      length: 64  # Fixed length debug data

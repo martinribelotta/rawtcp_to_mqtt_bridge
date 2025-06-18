@@ -1,0 +1,31 @@
+# Sensor data packet definition
+sensor_data:
+  mqtt:
+    topic: "sensors/data_sensor_{{sensor_id}}"
+    payload: |
+      {
+        "temperature": {{temperature}},
+        "humidity": {{humidity}},
+        "pressure": {{pressure}}
+      }
+  fields:
+    - name: packet_type
+      type: uint8
+      offset: 0
+      value: 0x10  # Unique packet identifier
+
+    - name: sensor_id
+      type: uint16
+      offset: 1
+
+    - name: temperature
+      type: float32
+      offset: 3
+
+    - name: humidity
+      type: float32
+      offset: 7
+
+    - name: pressure
+      type: float32
+      offset: 11

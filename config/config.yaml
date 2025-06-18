@@ -1,0 +1,19 @@
+tcp:
+  port: 12345
+  bind: "0.0.0.0"
+
+mqtt:
+  host: "localhost"
+  port: 1883
+  client_id: "tcp_bridge"
+
+logging:
+  level: "debug"
+
+packet_defs:
+  paths:
+    - "packets"  # directorio relativo a config.yaml
+    - "/etc/tcp_mqtt_bridge/packets"  # directorio absoluto de ejemplo
+  patterns:
+    - "*.yaml"
+    - "*.yml"

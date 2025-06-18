@@ -1,0 +1,7 @@
+{
+    "wifi_ssid": "RibelottaWifi",
+    "wifi_password": "carlos5113",
+    "server_host": "192.168.1.21",
+    "server_port": 12345,
+    "sensor_id": 1
+}

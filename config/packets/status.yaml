@@ -1,0 +1,42 @@
+# Status report packet definition
+status_report:
+  mqtt:
+    topic: "status/device_{{device_id}}"
+    payload: |
+      {
+        "status": {{status_flags}},
+        "error": {{error_code}},
+        "uptime": {{uptime}},
+        "message": "{{message}}"
+      }
+    qos: 1          # 0: at most once, 1: at least once, 2: exactly once
+    retain: true    # retain last message on broker
+  fields:
+    - name: packet_type
+      type: uint8
+      offset: 0
+      value: 0x30  # Unique packet identifier
+
+    - name: device_id
+      type: uint16
+      offset: 1
+
+    - name: status_flags
+      type: uint8
+      offset: 3
+      bitfield:
+        bit_offset: 0
+        bit_count: 8  # Status flags
+
+    - name: error_code
+      type: uint16
+      offset: 4
+
+    - name: uptime
+      type: uint32
+      offset: 6
+
+    - name: message
+      type: bytearray
+      offset: 10
+      length: 32  # Fixed length message field
